@@ -12,7 +12,7 @@ import { io } from 'socket.io-client';
 // Resolve Socket.IO server URL from env for production deployments
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://b-rent-production.up.railway.app/' : 'http://localhost:3000');
+  (process.env.NODE_ENV === 'production' ? 'https://b-rent-production.up.railway.app' : 'http://localhost:3000');
 
 export default function MessagesPage({ params }) {
   const { data: session, status } = useSession();
@@ -94,23 +94,47 @@ export default function MessagesPage({ params }) {
   useEffect(() => {
     if (!session || !adId) return;
 
+    console.log('🔌 Connecting to socket...', SOCKET_URL);
+
     // Initialize socket connection
-    socketRef.current = io(SOCKET_URL);
-    
-    // Join the ad room
-    socketRef.current.emit('join-room', adId);
+    socketRef.current = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+
+    // Connection event handlers
+    socketRef.current.on('connect', () => {
+      console.log('✅ Socket connected!', socketRef.current.id);
+      // Join the ad room
+      socketRef.current.emit('join-room', adId);
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error);
+    });
+
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected:', reason);
+    });
 
     // Listen for incoming messages
     socketRef.current.on('receive-message', (messageData) => {
-      // Only add message if it's not from the current user (to avoid duplicates)
-      if (messageData.sender !== session.user.id) {
-        setMessages(prev => [...prev, messageData]);
-      }
+      console.log('📬 Message received:', messageData);
+      
+      // Add message if it's not already in the list (avoid duplicates)
+      setMessages(prev => {
+        const exists = prev.some(msg => msg._id === messageData._id);
+        if (exists) return prev;
+        return [...prev, messageData];
+      });
     });
 
     // Cleanup on unmount
     return () => {
       if (socketRef.current) {
+        console.log('🔌 Disconnecting socket...');
         socketRef.current.disconnect();
       }
     };
@@ -161,8 +185,11 @@ export default function MessagesPage({ params }) {
         setMessages(prev => [...prev, response.data.message]);
         
         // Emit message via socket for real-time delivery
-        if (socketRef.current) {
+        if (socketRef.current && socketRef.current.connected) {
+          console.log('📤 Sending message via socket:', messageData);
           socketRef.current.emit('send-message', messageData);
+        } else {
+          console.warn('⚠️ Socket not connected, message saved but not broadcasted');
         }
         
         setNewMessage('');

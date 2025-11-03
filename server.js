@@ -6,7 +6,6 @@ const { Server } = require('socket.io');
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = process.env.PORT || 3000;
-
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
@@ -24,50 +23,55 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: {
-      origin:
-        process.env.SOCKET_CORS_ORIGIN ||
-        (process.env.NODE_ENV === 'production' ? 'https://b-rent-seven.vercel.app/' : 'http://localhost:3000'),
+      origin: process.env.NODE_ENV === 'production' 
+        ? 'https://b-rent-production.up.railway.app' 
+        : 'http://localhost:3000',
       methods: ["GET", "POST"],
+      credentials: true
     },
+    transports: ['websocket', 'polling']
   });
 
   // Socket.io connection handling
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('✅ User connected:', socket.id);
 
     // Join a room for specific ad conversation
     socket.on('join-room', (adId) => {
-      socket.join(`ad-${adId}`);
-      console.log(`User ${socket.id} joined room ad-${adId}`);
+      const roomId = `ad-${adId}`;
+      socket.join(roomId);
+      console.log(`✅ User ${socket.id} joined room ${roomId}`);
     });
 
-    // Handle sending messages (real-time broadcast only)
-    // Note: Message is already saved to DB via API call from frontend
+    // Handle sending messages
     socket.on('send-message', (messageData) => {
-      console.log('Broadcasting message:', messageData);
+      console.log('📨 Broadcasting message:', messageData);
       
-      // Broadcast to all users in the ad room EXCEPT the sender
-      // Sender already has the message in their UI
-      socket.to(`ad-${messageData.adId}`).emit('receive-message', messageData);
+      const roomId = `ad-${messageData.adId}`;
+      
+      // Broadcast to ALL users in the room (including sender)
+      io.to(roomId).emit('receive-message', messageData);
     });
 
-    // Handle typing indicator (optional feature)
+    // Handle typing indicator (optional)
     socket.on('typing', (data) => {
-      socket.to(`ad-${data.adId}`).emit('user-typing', {
+      const roomId = `ad-${data.adId}`;
+      socket.to(roomId).emit('user-typing', {
         userId: data.userId,
         userName: data.userName
       });
     });
 
     socket.on('stop-typing', (data) => {
-      socket.to(`ad-${data.adId}`).emit('user-stop-typing', {
+      const roomId = `ad-${data.adId}`;
+      socket.to(roomId).emit('user-stop-typing', {
         userId: data.userId
       });
     });
 
     // Handle user disconnect
     socket.on('disconnect', () => {
-      console.log('User disconnected:', socket.id);
+      console.log('❌ User disconnected:', socket.id);
     });
   });
 
