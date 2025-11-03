@@ -24,11 +24,11 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' 
-        ? 'https://your-domain.com' 
-        : 'http://localhost:3000',
-      methods: ["GET", "POST"]
-    }
+      origin:
+        process.env.SOCKET_CORS_ORIGIN ||
+        (process.env.NODE_ENV === 'production' ? 'https://b-rent-seven.vercel.app/' : 'http://localhost:3000'),
+      methods: ["GET", "POST"],
+    },
   });
 
   // Socket.io connection handling

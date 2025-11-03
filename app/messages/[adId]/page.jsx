@@ -9,6 +9,11 @@ import moment from 'moment';
 import Loading from '../../loading';
 import { io } from 'socket.io-client';
 
+// Resolve Socket.IO server URL from env for production deployments
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL ||
+  (process.env.NODE_ENV === 'production' ? 'https://b-rent-production.up.railway.app/' : 'http://localhost:3000');
+
 export default function MessagesPage({ params }) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -90,7 +95,7 @@ export default function MessagesPage({ params }) {
     if (!session || !adId) return;
 
     // Initialize socket connection
-    socketRef.current = io(process.env.NODE_ENV === 'production' ? 'https://your-domain.com' : 'http://localhost:3000');
+    socketRef.current = io(SOCKET_URL);
     
     // Join the ad room
     socketRef.current.emit('join-room', adId);
