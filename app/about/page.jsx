@@ -91,7 +91,7 @@ export default function AboutPage() {
         <div className="mt-6 text-gray-700">
           <p>Email: <span className="text-blue-600">support@brent.com</span></p>
           <p>Phone: <span className="text-blue-600">+880 1700-000000</span></p>
-          <Loading/>
+         
         </div>
       </div>
     </div>
