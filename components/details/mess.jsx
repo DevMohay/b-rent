@@ -1,54 +1,64 @@
 import React from "react";
 
 const MessDetails = ({ ad }) => {
-  return (
-    <div className=" mt-4 p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4 border-b pb-2 text-gray-800">
-        Mess Details
-      </h2>
-      <div className="">
-        <div className="min-w-full  border-gray-300 mb-4">
-          <div className="">
-            {ad.title}
-            <h1 className="font-bold">3 Bedder Room Price: {ad.price}TK</h1>
-            <p>{ad.rentOrSale === "rent" ? <p>Per Month</p> : ""}</p>
-            <h1 className="font-bold">
-              2 Bedder Room Price: {ad.doubleRoomPrice}TK
-            </h1>
-            <p>{ad.rentOrSale === "rent" ? <p>Per Month</p> : ""}</p>
-            <h1 className="font-bold">
-              Single Room Price: {ad.singleRoomPrice}TK
-            </h1>
-            <p>{ad.rentOrSale === "rent" ? <p>Per Month</p> : ""}</p>
-            <h1 className="font-bold capitalize">Floor Type: {ad.floorType}</h1>
-            Ceiling Type: {ad.roofType === "saad" ? <p>ছাদ</p> : <p>টিনশেড</p>}
-            {/* {ad.roofType === 'saad' &&(
-                           
-                                    Total Floor: {ad.floorNumbers}
-                               
-                        )} */}
-            Seat Available: {ad.seatCount}
-            Seat Available: {ad.total}
-            {ad.kitchen === true ? (
-              <p>Kitchen Available</p>
-            ) : (
-              <p>Kitchen Not Available</p>
-            )}
-            {ad.baranda === true ? (
-              <p>Baranda Available</p>
-            ) : (
-              <p>Baranda Not Available</p>
-            )}
-            {ad.balcony === true ? (
-              <p>Balcony Available</p>
-            ) : (
-              <p>Balcony Not Available</p>
-            )}
-          </div>
+    const priceItem = (label, value) => (
+        <div className="p-4 border rounded-lg bg-gray-50">
+            <p className="text-sm text-gray-500">{label}</p>
+            <p className="text-lg font-medium text-gray-800">{value ? `৳${value}` : '—'}</p>
         </div>
-      </div>
-    </div>
-  );
+    );
+
+    const featureItem = (label, value) => (
+        <div className="p-4 border rounded-lg bg-gray-50">
+            <p className="text-sm text-gray-500">{label}</p>
+            <p className="text-lg font-medium text-gray-800">{value ?? '—'}</p>
+        </div>
+    );
+
+    return (
+        <div className="mt-4 space-y-6">
+            <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Mess Details</h2>
+                        <p className="text-gray-500 mt-1">Room types, amenities, and pricing</p>
+                    </div>
+                    <div className="mt-4 md:mt-0 text-right">
+                        <p className="text-2xl font-bold text-green-600">৳{ad.price?.toLocaleString?.() || ad.price}</p>
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded capitalize">{ad.rentOrSale === 'rent' ? 'For Rent' : 'For Sale'}</span>
+                    </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {priceItem('Single Room Price', ad.singleRoomPrice)}
+                    {priceItem('Double Room Price', ad.doubleRoomPrice)}
+                    {priceItem('Triple Room Price', ad.tripleRoomPrice)}
+                    {priceItem('AC Room Price', ad.acRoomPrice)}
+                    {priceItem('Non-AC Room Price', ad.nonAcRoomPrice)}
+                    {priceItem('Attach Bath Price', ad.attachBathPrice)}
+                    {priceItem('Common Bath Price', ad.commonBathPrice)}
+                </div>
+
+                <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-gray-800">Amenities</h3>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {featureItem('Meal Included', ad.mealIncluded ? 'Yes' : 'No')}
+                        {featureItem('Laundry Service', ad.laundryService ? 'Available' : 'Not Available')}
+                        {featureItem('WiFi', ad.wifi ? 'Available' : 'Not Available')}
+                        {featureItem('Generator', ad.generator ? 'Available' : 'Not Available')}
+                        {featureItem('Water Supply', ad.waterSupply ? 'Available' : 'Not Available')}
+                        {featureItem('Common Room', ad.commonRoom ? 'Available' : 'Not Available')}
+                        {featureItem('Kitchen Access', ad.kitchenAccess ? 'Available' : 'Not Available')}
+                    </div>
+                </div>
+
+                <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800">Description</h3>
+                    <p className="mt-2 text-gray-700 leading-relaxed">{ad.description}</p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default MessDetails;

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import MapPicker from "../ui/MapPicker";
 
 const RestaurantForm = forwardRef(({ onChange }, ref) => {
   const [form, setForm] = useState({
@@ -37,83 +38,13 @@ const RestaurantForm = forwardRef(({ onChange }, ref) => {
     video: null,
   });
 
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tempCoords, setTempCoords] = useState({ lat: 25.0083, lng: 89.2839 });
+  // Map selection handled by MapPicker component
 
   // Sync with parent
   useEffect(() => {
     if (onChange) onChange(form);
   }, [form, onChange]);
 
-  // Load map
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY`;
-      script.async = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showMap && mapLoaded) {
-      const map = new window.google.maps.Map(document.getElementById("google-map"), {
-        center: tempCoords,
-        zoom: 15,
-      });
-
-      const marker = new window.google.maps.Marker({
-        position: tempCoords,
-        map,
-        draggable: true,
-      });
-
-      marker.addListener("dragend", (e) => {
-        setTempCoords({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-      });
-
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "background:#fff;padding:12px;margin:10px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;gap:6px;cursor:pointer";
-
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "locationOption";
-      radio.id = "use-my-location";
-
-      const label = document.createElement("label");
-      label.htmlFor = "use-my-location";
-      label.textContent = "My Location";
-
-      wrapper.appendChild(radio);
-      wrapper.appendChild(label);
-
-      wrapper.onclick = () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
-              const position = { lat, lng };
-              map.setCenter(position);
-              marker.setPosition(position);
-              setTempCoords(position);
-              radio.checked = true;
-            },
-            () => alert("Location access denied.")
-          );
-        } else {
-          alert("Geolocation not supported.");
-        }
-      };
-
-      map.controls[window.google.maps.ControlPosition.TOP_LEFT].push(wrapper);
-    }
-  }, [showMap, mapLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -130,10 +61,7 @@ const RestaurantForm = forwardRef(({ onChange }, ref) => {
     }
   };
 
-  const confirmLocation = () => {
-    setForm((prev) => ({ ...prev, coordinates: tempCoords }));
-    setShowMap(false);
-  };
+  // Map selection handled by MapPicker
 
   // Expose methods to parent via ref
   useImperativeHandle(ref, () => ({
@@ -146,280 +74,429 @@ const RestaurantForm = forwardRef(({ onChange }, ref) => {
   }));
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <input name="union" value={form.union} onChange={handleChange} placeholder="Union" />
-      <input name="area" value={form.area} onChange={handleChange} placeholder="Area" />
-      <input name="roadNumber" value={form.roadNumber} onChange={handleChange} placeholder="Road Number" />
-      <input name="title" value={form.title} onChange={handleChange} placeholder="Title" />
-      <textarea name="description" value={form.description} onChange={handleChange} className="col-span-2" placeholder="Description" />
-
-      <button type="button" onClick={() => setShowMap(true)} className="col-span-2 bg-gray-200 px-4 py-2 rounded">
-        📍 Pick Location
-      </button>
-      {form.coordinates && (
-        <div className="col-span-2 text-sm text-gray-700">
-          📌 Selected: {form.coordinates.lat}, {form.coordinates.lng}
-        </div>
-      )}
-
-      {showMap && (
-        <div className="col-span-2 mt-4 border rounded overflow-hidden">
-          <div id="google-map" className="w-full h-[400px]" />
-          <div className="flex justify-between p-2 bg-gray-100">
-            <button onClick={() => setShowMap(false)} className="bg-red-600 text-white px-4 py-2 rounded">Cancel</button>
-            <button onClick={confirmLocation} className="bg-blue-600 text-white px-4 py-2 rounded">Confirm Location</button>
+    <div className="w-full">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">🍽️ Restaurant Information</h2>
+        
+        {/* Basic Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input 
+                name="title" 
+                value={form.title} 
+                onChange={handleChange} 
+                placeholder="Enter a descriptive title for your restaurant" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Provide detailed information about your restaurant space"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+              <select 
+                name="rentOrSale" 
+                value={form.rentOrSale} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Type</option>
+                <option value="rent">For Rent</option>
+                <option value="sale">For Sale</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (BDT)</label>
+              <input 
+                name="price" 
+                value={form.price} 
+                onChange={handleChange} 
+                placeholder="Enter price" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
         </div>
-      )}
-
+        
+        {/* Location Details */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Location Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Union</label>
+              <input 
+                name="union" 
+                value={form.union} 
+                onChange={handleChange} 
+                placeholder="Enter union" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+              <input 
+                name="area" 
+                value={form.area} 
+                onChange={handleChange} 
+                placeholder="Enter area" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Road Number</label>
+              <input 
+                name="roadNumber" 
+                value={form.roadNumber} 
+                onChange={handleChange} 
+                placeholder="Enter road number" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Map Location</label>
+              <MapPicker
+                value={form.coordinates}
+                onChange={(coords) => setForm((prev) => ({ ...prev, coordinates: coords }))}
+                buttonLabel="Pick Location on Map"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Restaurant Details */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Restaurant Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Type</label>
+              <select 
+                name="restaurantType" 
+                value={form.restaurantType} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Restaurant Type</option>
+                <option value="fastFood">Fast Food</option>
+                <option value="casual">Casual Dining</option>
+                <option value="fineDining">Fine Dining</option>
+                <option value="cafe">Cafe</option>
+                <option value="buffet">Buffet</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Size (sqft)</label>
+              <input 
+                name="size" 
+                value={form.size} 
+                onChange={handleChange} 
+                placeholder="Enter size in square feet" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Total Floors</label>
+              <input 
+                name="totalFloors" 
+                value={form.totalFloors} 
+                onChange={handleChange} 
+                placeholder="Enter total floors" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Seating Capacity</label>
+              <input 
+                name="seatingCapacity" 
+                value={form.seatingCapacity} 
+                onChange={handleChange} 
+                placeholder="Enter seating capacity" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Kitchen Type</label>
+              <select 
+                name="kitchenType" 
+                value={form.kitchenType} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Kitchen Type</option>
+                <option value="open">Open Kitchen</option>
+                <option value="closed">Closed Kitchen</option>
+                <option value="semi">Semi-Open Kitchen</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Parking Space</label>
+              <input 
+                name="parkingSpace" 
+                value={form.parkingSpace} 
+                onChange={handleChange} 
+                placeholder="Enter parking capacity" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Available From</label>
+              <input 
+                type="date" 
+                name="availableFrom" 
+                value={form.availableFrom} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Status</label>
+              <select 
+                name="businessStatus" 
+                value={form.businessStatus} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Business Status</option>
+                <option value="running">Currently Running</option>
+                <option value="closed">Closed</option>
+                <option value="new">New Setup</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contract Period (months)</label>
+              <input 
+                name="contractMonths" 
+                value={form.contractMonths} 
+                onChange={handleChange} 
+                placeholder="Enter contract period" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Features & Amenities */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Features & Amenities</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="acRooms"
+                checked={form.acRooms}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">AC Rooms</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="outdoorSeating"
+                checked={form.outdoorSeating}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Outdoor Seating</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="partyHall"
+                checked={form.partyHall}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Party Hall</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="gasLine"
+                checked={form.gasLine}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Gas Line</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="electricity"
+                checked={form.electricity}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Electricity</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="generator"
+                checked={form.generator}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Generator</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="waterSupply"
+                checked={form.waterSupply}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Water Supply</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="fireSafety"
+                checked={form.fireSafety}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Fire Safety</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="lift"
+                checked={form.lift}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Lift</span>
+            </label>
+          </div>
+        </div>
+        
+        {/* Equipment & Furnishing */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Equipment & Furnishing</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="equipmentIncluded"
+                checked={form.equipmentIncluded}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Equipment Included</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="furnitureIncluded"
+                checked={form.furnitureIncluded}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Furniture Included</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="displayCounter"
+                checked={form.displayCounter}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Display Counter</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="fridgeIncluded"
+                checked={form.fridgeIncluded}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Fridge Included</span>
+            </label>
+          </div>
+        </div>
+        
+        {/* Media */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Property Media</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Photos (Multiple)</label>
+              <input
+                type="file"
+                name="photos"
+                multiple
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              {form.photos.length > 0 && (
+                <p className="mt-1 text-sm text-green-600">{form.photos.length} photo(s) selected</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Video (Optional)</label>
+              <input
+                type="file"
+                name="video"
+                accept="video/*"
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              {form.video && (
+                <p className="mt-1 text-sm text-green-600">Video selected: {form.video.name}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       
-
-
-      <div className="col-span-2">
-        <label>
-          <input
-            type="radio"
-            name="rentOrSale"
-            value="rent"
-            checked={form.rentOrSale === "rent"}
-            onChange={handleChange}
-          />{" "}
-          Rent
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="rentOrSale"
-            value="sale"
-            checked={form.rentOrSale === "sale"}
-            onChange={handleChange}
-          />{" "}
-          Sale
-        </label>
-      </div>
-
-      <input
-        type="number"
-        name="price"
-        value={form.price}
-        onChange={handleChange}
-        placeholder="Price"
-      />
-      <select
-        name="restaurantType"
-        value={form.restaurantType}
-        onChange={handleChange}
-      >
-        <option value="">Type</option>
-        <option value="fast_food">Fast Food</option>
-        <option value="family">Family</option>
-        <option value="cafe">Café</option>
-        <option value="fine_dining">Fine Dining</option>
-        <option value="buffet">Buffet</option>
-        <option value="bakery">Bakery</option>
-      </select>
-      <input
-        type="number"
-        name="size"
-        value={form.size}
-        onChange={handleChange}
-        placeholder="Size (sq.ft)"
-      />
-      <input
-        type="number"
-        name="totalFloors"
-        value={form.totalFloors}
-        onChange={handleChange}
-        placeholder="Total Floor(s)"
-      />
-      <input
-        type="number"
-        name="seatingCapacity"
-        value={form.seatingCapacity}
-        onChange={handleChange}
-        placeholder="Seating Capacity"
-      />
-
-      <label>
-        <input
-          type="checkbox"
-          name="acRooms"
-          checked={form.acRooms}
-          onChange={handleChange}
-        />{" "}
-        AC Rooms
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="outdoorSeating"
-          checked={form.outdoorSeating}
-          onChange={handleChange}
-        />{" "}
-        Outdoor Seating
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="partyHall"
-          checked={form.partyHall}
-          onChange={handleChange}
-        />{" "}
-        Party Hall
-      </label>
-
-      <select
-        name="kitchenType"
-        value={form.kitchenType}
-        onChange={handleChange}
-      >
-        <option value="">Kitchen Type</option>
-        <option value="fully">Fully Setup</option>
-        <option value="semi">Semi</option>
-        <option value="none">None</option>
-      </select>
-
-      {/* Facilities */}
-      <label>
-        <input
-          type="checkbox"
-          name="gasLine"
-          checked={form.gasLine}
-          onChange={handleChange}
-        />{" "}
-        Gas Line
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="electricity"
-          checked={form.electricity}
-          onChange={handleChange}
-        />{" "}
-        Electricity
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="generator"
-          checked={form.generator}
-          onChange={handleChange}
-        />{" "}
-        Generator Backup
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="waterSupply"
-          checked={form.waterSupply}
-          onChange={handleChange}
-        />{" "}
-        Water Supply
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="fireSafety"
-          checked={form.fireSafety}
-          onChange={handleChange}
-        />{" "}
-        Fire Safety Equipment
-      </label>
-      <input
-        type="number"
-        name="parkingSpace"
-        value={form.parkingSpace}
-        onChange={handleChange}
-        placeholder="Parking (vehicles)"
-      />
-      <label>
-        <input
-          type="checkbox"
-          name="lift"
-          checked={form.lift}
-          onChange={handleChange}
-        />{" "}
-        Lift Access
-      </label>
-
-      {/* Equipment */}
-      <label>
-        <input
-          type="checkbox"
-          name="equipmentIncluded"
-          checked={form.equipmentIncluded}
-          onChange={handleChange}
-        />{" "}
-        Cooking Equipment
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="furnitureIncluded"
-          checked={form.furnitureIncluded}
-          onChange={handleChange}
-        />{" "}
-        Furniture
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="displayCounter"
-          checked={form.displayCounter}
-          onChange={handleChange}
-        />{" "}
-        Display Counter
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          name="fridgeIncluded"
-          checked={form.fridgeIncluded}
-          onChange={handleChange}
-        />{" "}
-        Fridge Included
-      </label>
-
-      {/* Others */}
-      <input
-        type="date"
-        name="availableFrom"
-        value={form.availableFrom}
-        onChange={handleChange}
-      />
-      <div className="col-span-2">
-        <label>
-          <input
-            type="radio"
-            name="businessStatus"
-            value="running"
-            checked={form.businessStatus === "running"}
-            onChange={handleChange}
-          />{" "}
-          Running
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="businessStatus"
-            value="closed"
-            checked={form.businessStatus === "closed"}
-            onChange={handleChange}
-          />{" "}
-          Closed
-        </label>
-      </div>
-      <input
-        type="number"
-        name="contractMonths"
-        value={form.contractMonths}
-        onChange={handleChange}
-        placeholder="Minimum Contract (months)"
-      />
-
-      {/* Media */}
-       <input type="file" name="photos" multiple onChange={handleChange} />
-      <input type="file" name="video" onChange={handleChange} />
+      {/* Map Modal removed; MapPicker handles selection */}
     </div>
   );
 });

@@ -32,10 +32,6 @@ export const authOptions = {
         const user = await User.findOne({ email: credentials.email })
 
         if (user && bcrypt.compareSync(credentials.password, user.password)) {
-          // If a role is provided in credentials, check if it matches the user's actual role
-          if (credentials.role && user.role !== credentials.role) {
-            throw new Error("You do not have the selected role.");
-          }
           return user;
         } else {
           return null;

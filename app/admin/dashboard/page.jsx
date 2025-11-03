@@ -43,7 +43,8 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const response = await axiosInstance.get("/ads");
-      setAds(response.data);
+      // Extract ads array from response (API now returns {ads, totalPages, currentPage})
+      setAds(response.data.ads || response.data);
       setError(null);
     } catch (err) {
       setError("Failed to fetch ads.");

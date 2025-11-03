@@ -5,6 +5,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from "react";
+import MapPicker from "../ui/MapPicker";
 
 const ShopForm = forwardRef(({ onChange }, ref) => {
   const [form, setForm] = useState({
@@ -19,29 +20,28 @@ const ShopForm = forwardRef(({ onChange }, ref) => {
     shopType: "",
     size: "",
     floorNumber: "",
-    frontWidth: "",
-    height: "",
-    storeRoom: false,
-    electricity: false,
-    water: false,
-    generator: false,
-    ac: false,
-    glassFront: false,
-    shutter: false,
+    frontageWidth: "",
+    ceilingHeight: "",
+    availableFrom: "",
+    minLeasePeriod: "",
+    cornerShop: false,
+    mainRoadFacing: false,
     parking: false,
-    readyToUse: "",
-    usedFor: "",
-    images: [],
+    airConditioned: false,
+    bathroom: false,
+    waterSupply: false,
+    electricity: false,
+    gasConnection: false,
+    securitySystem: false,
+    displayArea: false,
+    storageRoom: false,
+    furnishingIncluded: false,
+    signageFacility: false,
+    photos: [],
     video: null,
   });
 
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tempCoords, setTempCoords] = useState({
-    lat: 25.00835051211514,
-    lng: 89.28396456979571,
-  });
-  const [selectedCoords, setSelectedCoords] = useState(null);
+  // Map selection handled by MapPicker component
 
   useImperativeHandle(ref, () => ({
     getFormData: () => ({ ...form, rentOrSale: form.rentOrSale }),
@@ -63,19 +63,24 @@ const ShopForm = forwardRef(({ onChange }, ref) => {
         shopType: "",
         size: "",
         floorNumber: "",
-        frontWidth: "",
-        height: "",
-        storeRoom: false,
-        electricity: false,
-        water: false,
-        generator: false,
-        ac: false,
-        glassFront: false,
-        shutter: false,
+        frontageWidth: "",
+        ceilingHeight: "",
+        availableFrom: "",
+        minLeasePeriod: "",
+        cornerShop: false,
+        mainRoadFacing: false,
         parking: false,
-        readyToUse: "",
-        usedFor: "",
-        images: [],
+        airConditioned: false,
+        bathroom: false,
+        waterSupply: false,
+        electricity: false,
+        gasConnection: false,
+        securitySystem: false,
+        displayArea: false,
+        storageRoom: false,
+        furnishingIncluded: false,
+        signageFacility: false,
+        photos: [],
         video: null,
       }));
     },
@@ -85,76 +90,6 @@ const ShopForm = forwardRef(({ onChange }, ref) => {
     if (onChange) onChange(form);
   }, [form, onChange]);
 
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AlzaSyiACP085SUiZQT_y1CUi1s9YydI6EImm2k`;
-      script.async = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showMap && mapLoaded) {
-      const map = new window.google.maps.Map(
-        document.getElementById("google-map"),
-        {
-          center: tempCoords,
-          zoom: 15,
-        }
-      );
-
-      const marker = new window.google.maps.Marker({
-        position: tempCoords,
-        map,
-        draggable: true,
-      });
-
-      marker.addListener("dragend", (e) => {
-        setTempCoords({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-      });
-
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "background:#fff;padding:12px;margin:10px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;gap:6px;cursor:pointer";
-
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "locationOption";
-      radio.id = "use-my-location";
-
-      const label = document.createElement("label");
-      label.htmlFor = "use-my-location";
-      label.textContent = "My Location";
-
-      wrapper.appendChild(radio);
-      wrapper.appendChild(label);
-
-      wrapper.onclick = () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lng = pos.coords.longitude;
-              const position = { lat, lng };
-              map.setCenter(position);
-              marker.setPosition(position);
-              setTempCoords(position);
-              radio.checked = true;
-            },
-            () => alert("Location access denied.")
-          );
-        } else {
-          alert("Geolocation not supported.");
-        }
-      };
-
-      map.controls[window.google.maps.ControlPosition.TOP_LEFT].push(wrapper);
-    }
-  }, [showMap, mapLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -165,231 +100,414 @@ const ShopForm = forwardRef(({ onChange }, ref) => {
   };
 
   const handleImages = (e) => {
-    setForm((prev) => ({ ...prev, images: Array.from(e.target.files) }));
+    setForm((prev) => ({ ...prev, photos: Array.from(e.target.files) }));
   };
 
   const handleVideo = (e) => {
     setForm((prev) => ({ ...prev, video: e.target.files[0] }));
   };
 
-  const handleLocationConfirm = () => {
-    setSelectedCoords(tempCoords);
-    setForm((prev) => ({
-      ...prev,
-      coordinates: { lat: tempCoords.lat, lng: tempCoords.lng },
-    }));
-    setShowMap(false);
-  };
+  // Map selection handled by MapPicker
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold">📍 Location Info</h2>
-      <input
-        className="input"
-        name="union"
-        value={form.union}
-        onChange={handleChange}
-        placeholder="Union Name"
-      />
-      <input
-        className="input"
-        name="area"
-        value={form.area}
-        onChange={handleChange}
-        placeholder="Area Name"
-      />
-      <input
-        className="input"
-        name="roadNumber"
-        value={form.roadNumber}
-        onChange={handleChange}
-        placeholder="Road Number"
-      />
-      <input
-        className="input"
-        name="title"
-        value={form.title}
-        onChange={handleChange}
-        placeholder="Title"
-      />
-      <textarea
-        className="input"
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        placeholder="Description"
-      />
-
-      <button
-        type="button"
-        onClick={() => setShowMap(true)}
-        className="bg-gray-200 px-4 py-2 rounded border"
-      >
-        📍 Pick Location on Map
-      </button>
-      {selectedCoords && (
-        <p className="text-sm text-gray-700 mt-1">
-          Location: {selectedCoords.lat}, {selectedCoords.lng}
-        </p>
-      )}
-
-      {showMap && (
-        <div className="col-span-2 mt-4 border rounded overflow-hidden">
-          <div id="google-map" className="w-full h-[400px]" />
-          <div className="flex justify-between p-2 bg-gray-100">
-            <button
-              type="button"
-              onClick={() => setShowMap(false)}
-              className="bg-red-600 text-white px-4 py-1 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleLocationConfirm}
-              className="bg-green-600 text-white px-4 py-1 rounded"
-            >
-              Confirm Location
-            </button>
+    <div className="w-full">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">🏪 Shop Information</h2>
+        
+        {/* Basic Information */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input 
+                name="title" 
+                value={form.title} 
+                onChange={handleChange} 
+                placeholder="Enter a descriptive title for your shop" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Provide detailed information about your shop space"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+              <select 
+                name="rentOrSale" 
+                value={form.rentOrSale} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Type</option>
+                <option value="rent">For Rent</option>
+                <option value="sale">For Sale</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (BDT)</label>
+              <input 
+                name="price" 
+                value={form.price} 
+                onChange={handleChange} 
+                placeholder="Enter price" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
         </div>
-      )}
-
-      <h2 className="text-lg font-semibold">🏪 Basic Info</h2>
-      <select
-        className="input"
-        name="rentOrSale"
-        value={form.rentOrSale}
-        onChange={handleChange}
-      >
-        <option value="rent">Rent</option>
-        <option value="sale">Sale</option>
-      </select>
-      <input
-        className="input"
-        name="price"
-        type="number"
-        value={form.price}
-        onChange={handleChange}
-        placeholder="Price"
-      />
-      <select
-        className="input"
-        name="shopType"
-        value={form.shopType}
-        onChange={handleChange}
-      >
-        <option value="">Select Shop Type</option>
-        <option value="grocery">Grocery</option>
-        <option value="clothing">Clothing</option>
-        <option value="electronics">Electronics</option>
-        <option value="pharmacy">Pharmacy</option>
-        <option value="mobile">Mobile</option>
-        <option value="others">Others</option>
-      </select>
-      <input
-        className="input"
-        name="size"
-        type="number"
-        value={form.size}
-        onChange={handleChange}
-        placeholder="Shop Size (sq.ft)"
-      />
-
-      <h2 className="text-lg font-semibold">🧱 Structure</h2>
-      <input
-        className="input"
-        name="floorNumber"
-        value={form.floorNumber}
-        onChange={handleChange}
-        placeholder="Floor Number"
-      />
-      <input
-        className="input"
-        name="frontWidth"
-        value={form.frontWidth}
-        onChange={handleChange}
-        placeholder="Front Width (feet)"
-      />
-      <input
-        className="input"
-        name="height"
-        value={form.height}
-        onChange={handleChange}
-        placeholder="Height (feet)"
-      />
-      <label>
-        <input
-          type="checkbox"
-          name="storeRoom"
-          checked={form.storeRoom}
-          onChange={handleChange}
-        />{" "}
-        Attached Store Room
-      </label>
-
-      <h2 className="text-lg font-semibold">⚙️ Facilities</h2>
-      {[
-        "electricity",
-        "water",
-        "generator",
-        "ac",
-        "glassFront",
-        "shutter",
-        "parking",
-      ].map((item) => (
-        <label key={item}>
-          <input
-            type="checkbox"
-            name={item}
-            checked={form[item]}
-            onChange={handleChange}
-          />{" "}
-          {item.charAt(0).toUpperCase() +
-            item.slice(1).replace(/([A-Z])/g, " $1")}
-        </label>
-      ))}
-
-      <h2 className="text-lg font-semibold">📦 Utilities</h2>
-      <label>
-        <input
-          type="radio"
-          name="readyToUse"
-          value="yes"
-          checked={form.readyToUse === "yes"}
-          onChange={handleChange}
-        />{" "}
-        Ready-to-use
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="readyToUse"
-          value="no"
-          checked={form.readyToUse === "no"}
-          onChange={handleChange}
-        />{" "}
-        Empty
-      </label>
-      {form.readyToUse === "no" && (
-        <input
-          className="input"
-          name="usedFor"
-          value={form.usedFor}
-          onChange={handleChange}
-          placeholder="Previously used for?"
-        />
-      )}
-
-      <h2 className="text-lg font-semibold">📸 Media</h2>
-      <input className="input" type="file" multiple onChange={handleImages} />
-      <input className="input" type="file" onChange={handleVideo} />
+        
+        {/* Location Details */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Location Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Union</label>
+              <input 
+                name="union" 
+                value={form.union} 
+                onChange={handleChange} 
+                placeholder="Enter union" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+              <input 
+                name="area" 
+                value={form.area} 
+                onChange={handleChange} 
+                placeholder="Enter area" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Road Number</label>
+              <input 
+                name="roadNumber" 
+                value={form.roadNumber} 
+                onChange={handleChange} 
+                placeholder="Enter road number" 
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Map Location</label>
+              <MapPicker
+                value={form.coordinates}
+                onChange={(coords) =>
+                  setForm((prev) => ({ ...prev, coordinates: coords }))
+                }
+                buttonLabel="Pick Location on Map"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Shop Details */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Shop Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Type</label>
+              <select 
+                name="shopType" 
+                value={form.shopType} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select Shop Type</option>
+                <option value="retail">Retail</option>
+                <option value="grocery">Grocery</option>
+                <option value="clothing">Clothing</option>
+                <option value="electronics">Electronics</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Size (sqft)</label>
+              <input 
+                name="size" 
+                value={form.size} 
+                onChange={handleChange} 
+                placeholder="Enter size in square feet" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Floor Number</label>
+              <input 
+                name="floorNumber" 
+                value={form.floorNumber} 
+                onChange={handleChange} 
+                placeholder="Enter floor number" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Frontage Width (ft)</label>
+              <input 
+                name="frontageWidth" 
+                value={form.frontageWidth} 
+                onChange={handleChange} 
+                placeholder="Enter frontage width" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ceiling Height (ft)</label>
+              <input 
+                name="ceilingHeight" 
+                value={form.ceilingHeight} 
+                onChange={handleChange} 
+                placeholder="Enter ceiling height" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Available From</label>
+              <input 
+                type="date" 
+                name="availableFrom" 
+                value={form.availableFrom} 
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Lease Period (months)</label>
+              <input 
+                name="minLeasePeriod" 
+                value={form.minLeasePeriod} 
+                onChange={handleChange} 
+                placeholder="Enter minimum lease period" 
+                type="number"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Features & Amenities */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Features & Amenities</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="cornerShop"
+                checked={form.cornerShop}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Corner Shop</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="mainRoadFacing"
+                checked={form.mainRoadFacing}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Main Road Facing</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="parking"
+                checked={form.parking}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Parking Available</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="airConditioned"
+                checked={form.airConditioned}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Air Conditioned</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="bathroom"
+                checked={form.bathroom}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Bathroom</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="waterSupply"
+                checked={form.waterSupply}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Water Supply</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="electricity"
+                checked={form.electricity}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Electricity</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="gasConnection"
+                checked={form.gasConnection}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Gas Connection</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="securitySystem"
+                checked={form.securitySystem}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Security System</span>
+            </label>
+          </div>
+        </div>
+        
+        {/* Additional Features */}
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Additional Features</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="displayArea"
+                checked={form.displayArea}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Display Area</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="storageRoom"
+                checked={form.storageRoom}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Storage Room</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="furnishingIncluded"
+                checked={form.furnishingIncluded}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Furnishing Included</span>
+            </label>
+            
+            <label className="flex items-center space-x-2 text-gray-700">
+              <input
+                type="checkbox"
+                name="signageFacility"
+                checked={form.signageFacility}
+                onChange={handleChange}
+                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+              />
+              <span className="text-sm">Signage Facility</span>
+            </label>
+          </div>
+        </div>
+        
+        {/* Media */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Property Media</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Photos (Multiple)</label>
+              <input
+                type="file"
+                name="photos"
+                multiple
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              {form.photos.length > 0 && (
+                <p className="mt-1 text-sm text-green-600">{form.photos.length} photo(s) selected</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Video (Optional)</label>
+              <input
+                type="file"
+                name="video"
+                accept="video/*"
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              />
+              {form.video && (
+                <p className="mt-1 text-sm text-green-600">Video selected: {form.video.name}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Map Modal removed; MapPicker handles selection in a modal */}
     </div>
   );
 });
 
 export default ShopForm;
 
-
-// শোন বিষয় টা হচ্ছে এমন যে, আমার app এ তো অনেক গুলো seller এবং অনেক গুলো buyer থাকবে। তো seller যারা আছে তারা তাদের house, land, shop ইত্যাদি post করবে। এবং প্রতিটা seller এর dashboard এ তাদের নিজেদের post দেখতে পাবে, delete করতে পারবে
-// শোন আমার app এ role মডেল আছে ৩টা , seller, buyer, admin। seller ad post করতে পারবে, তার dashboard এ তার পোস্ট গুলো দেখতে পাবে, delete করতে পারবে। update ও করতে পারবে।আর buyer সব গুলো post দেখতে পারবে। search,filter , sort করতে পারবে। আর admin সব গুলো post দেখতে পারবে, delete করতে পারবে, admin নিজে ad post করতে পারবে 

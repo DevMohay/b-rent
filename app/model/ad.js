@@ -30,6 +30,14 @@ const adSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    sellerSnapshot: {
+      name: String,
+      email: String,
+      phone: String,
+      whatsapp: String,
+      imo: String,
+      profilePicture: String,
+    },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import MapPicker from "../ui/MapPicker";
 
 export default function MessForm({ onChange }) {
   const [form, setForm] = useState({
@@ -28,86 +29,13 @@ export default function MessForm({ onChange }) {
     images: [],
   });
 
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tempCoords, setTempCoords] = useState({
-    lat: 25.00835051211514,
-    lng: 89.28396456979571,
-  });
+  // Map selection handled by MapPicker component
 
   // 🔁 Parent কে notify করো form data change হলে
   useEffect(() => {
     if (onChange) onChange(form);
   }, [form, onChange]);
 
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script");
-      script.src =
-        "https://maps.gomaps.pro/maps/api/js?key=AlzaSyiACP085SUiZQT_y1CUi1s9YydI6EImm2k";
-      script.async = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showMap && mapLoaded) {
-      const map = new window.google.maps.Map(
-        document.getElementById("google-map"),
-        {
-          center: tempCoords,
-          zoom: 15,
-        }
-      );
-
-      const marker = new window.google.maps.Marker({
-        position: tempCoords,
-        map,
-        draggable: true,
-      });
-
-      marker.addListener("dragend", (e) => {
-        setTempCoords({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-      });
-
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "background:#fff;padding:12px;margin:10px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;gap:6px;cursor:pointer";
-
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "locationOption";
-      radio.id = "use-my-location";
-
-      const label = document.createElement("label");
-      label.htmlFor = "use-my-location";
-      label.textContent = "My Location";
-
-      wrapper.appendChild(radio);
-      wrapper.appendChild(label);
-
-      wrapper.onclick = () => {
-        navigator.geolocation?.getCurrentPosition(
-          (pos) => {
-            const position = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-            map.setCenter(position);
-            marker.setPosition(position);
-            setTempCoords(position);
-            radio.checked = true;
-          },
-          () => alert("Location access denied.")
-        );
-      };
-
-      map.controls[window.google.maps.ControlPosition.TOP_LEFT].push(wrapper);
-    }
-  }, [showMap, mapLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -128,198 +56,245 @@ export default function MessForm({ onChange }) {
   };
 
   return (
-    <div className=" gap-4">
-      <h2 className=" text-xl font-bold">🛏️ Mess Post Form</h2>
-
-      <input
-        name="union"
-        value={form.union}
-        onChange={handleChange}
-        placeholder="Union"
-      />
-      <input
-        name="area"
-        value={form.area}
-        onChange={handleChange}
-        placeholder="Area"
-      />
-      <input
-        name="roadNumber"
-        value={form.roadNumber}
-        onChange={handleChange}
-        placeholder="Road No"
-      />
-      <input
-        name="title"
-        value={form.title}
-        onChange={handleChange}
-        placeholder="Ad Title"
-      />
-      <textarea
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        placeholder="Description"
-        className="col-span-2"
-      />
-
-      <div className="col-span-2">
-        <button
-          type="button"
-          onClick={() => setShowMap(true)}
-          className="bg-gray-200 px-4 py-2 rounded border"
-        >
-          🗺️ Pick Location on Map
-        </button>
-        {form.coordinates.lat && form.coordinates.lng && (
-          <p className="mt-2 text-sm text-gray-800">
-            ✅ Location: <b>{form.coordinates.lat}</b>,{" "}
-            <b>{form.coordinates.lng}</b>
-          </p>
-        )}
-      </div>
-
-      {showMap && (
-        <div className="col-span-2 mt-4 border rounded overflow-hidden">
-          <div id="google-map" className="w-full h-[400px]" />
-          <div className="flex justify-between p-2 bg-gray-100">
-            <button
-              onClick={() => setShowMap(false)}
-              className="bg-red-600 text-white px-3 py-1 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setForm((prev) => ({ ...prev, coordinates: tempCoords }));
-                setShowMap(false);
-              }}
-              className="bg-green-600 text-white px-3 py-1 rounded"
-            >
-              Confirm Location
-            </button>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold mb-6 text-blue-800 border-b pb-2">🛏️ Mess Post Form</h2>
+      
+      {/* Basic Information Section */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ad Title</label>
+            <input
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              placeholder="Enter a descriptive title"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Describe your mess accommodation in detail"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+            />
           </div>
         </div>
-      )}
+      </div>
 
+      {/* Location Section */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Location Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Union</label>
+            <input
+              name="union"
+              value={form.union}
+              onChange={handleChange}
+              placeholder="Enter union"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+            <input
+              name="area"
+              value={form.area}
+              onChange={handleChange}
+              placeholder="Enter area"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Road Number</label>
+            <input
+              name="roadNumber"
+              value={form.roadNumber}
+              onChange={handleChange}
+              placeholder="Enter road number"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
 
+        <div className="mt-3">
+          <MapPicker
+            value={form.coordinates}
+            onChange={(coords) =>
+              setForm((prev) => ({ ...prev, coordinates: coords }))
+            }
+            buttonLabel="Pick Location on Map"
+          />
+        </div>
+      </div>
 
-      <div className="flex flex-col gap-2">
-        <select
-          name="rentOrSale"
-          value={form.rentOrSale}
-          onChange={handleChange}
-        >
-          <option value="rent">Rent</option>
-        </select>
-        <br />
-
-
+      {/* Mess Details Section */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Mess Details</h3>
         
-        <div className="my-2 flex flex-col ">
-          <input
-            type="number"
-            name="singleRoomPrice"
-            value={form.singleRoomPrice}
-            onChange={handleChange}
-            placeholder="Single Room Price"
-            className="my-2"
-          />
-          <input
-            type="number"
-            name="doubleRoomPrice"
-            value={form.doubleRoomPrice}
-            onChange={handleChange}
-            placeholder="Double Room Price"
-            className="my-2"
-          />
-          <input
-            name="price"
-            type="number"
-            value={form.price}
-            onChange={handleChange}
-            placeholder="3 Bedded Room Price"
-            className="my-2"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Single Room Price (৳)</label>
+            <input
+              type="number"
+              name="singleRoomPrice"
+              value={form.singleRoomPrice}
+              onChange={handleChange}
+              placeholder="Enter price for single room"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Double Room Price (৳)</label>
+            <input
+              type="number"
+              name="doubleRoomPrice"
+              value={form.doubleRoomPrice}
+              onChange={handleChange}
+              placeholder="Enter price for double room"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">3 Bedded Room Price (৳)</label>
+            <input
+              name="price"
+              type="number"
+              value={form.price}
+              onChange={handleChange}
+              placeholder="Enter price for 3 bedded room"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size (sqft)</label>
+            <input
+              name="size"
+              value={form.size}
+              onChange={handleChange}
+              placeholder="Enter size in square feet"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Seats</label>
+            <input
+              name="seatCount"
+              value={form.seatCount}
+              onChange={handleChange}
+              placeholder="Enter total number of seats"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Floors</label>
+            <input
+              name="floorNumbers"
+              type="number"
+              value={form.floorNumbers}
+              onChange={handleChange}
+              placeholder="Enter number of floors"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
-        <input
-          name="size"
-          value={form.size}
-          onChange={handleChange}
-          placeholder="Size (sqft)"
-        />
-        <input
-          name="seatCount"
-          value={form.seatCount}
-          onChange={handleChange}
-          placeholder="Total Seats"
-        />
-        <input
-          name="floorNumbers"
-          type="number"
-          value={form.floorNumbers}
-          onChange={handleChange}
-          placeholder="Total Floors"
-        />
-        <div className="flex gap-4">
-          <label className="block  font-semibold">Floor Type:</label>
-          <select
-            name="floorType"
-            id=""
-            onChange={handleChange}
-            value={form.floorType}
-          >
-            <option value="tiles">টাইলস</option>
-            <option value="marble">ঢালায়</option>
-            <option value="wood">মাটি</option>
-          </select>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Floor Type</label>
+            <select
+              name="floorType"
+              onChange={handleChange}
+              value={form.floorType}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="tiles">টাইলস</option>
+              <option value="marble">ঢালায়</option>
+              <option value="wood">মাটি</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Roof Type</label>
+            <select
+              name="roofType"
+              value={form.roofType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="saad">ছাদ</option>
+              <option value="TinShed">টিন শেড</option>
+            </select>
+          </div>
         </div>
-        <div className="flex font-semibold text-white items-center gap-4">
-          <label className="ml-2">Roof:</label>
-
-          <select
-            name="roofType"
-            value={form.roofType}
-            onChange={handleChange}
-            className="ml-2"
-          >
-            <option value="saad">ছাদ</option>
-            <option value="TinShed">টিন শেড</option>
-          </select>
-        </div>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            name="balcony"
-            checked={form.balcony}
-            onChange={handleChange}
-          />
-          <label className="ml-2">Balcony</label>
-        </div>
-        <div>
-          <input
-            name="baranda"
-            type="checkbox"
-            checked={form.baranda}
-            onChange={handleChange}
-          />
-          <label className="ml-2">Baranda</label>
-        </div>
-
-        {["commonRoom", "kitchen", "furnished"].map((field) => (
-          <label key={field}>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center">
             <input
               type="checkbox"
-              name={field}
-              checked={form[field]}
+              id="balcony"
+              name="balcony"
+              checked={form.balcony}
               onChange={handleChange}
-            />{" "}
-            {field[0].toUpperCase() + field.slice(1).replace(/([A-Z])/g, " $1")}
-          </label>
-        ))}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="balcony" className="ml-2 text-sm text-gray-700">Balcony</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="baranda"
+              name="baranda"
+              checked={form.baranda}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="baranda" className="ml-2 text-sm text-gray-700">Baranda</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="commonRoom"
+              name="commonRoom"
+              checked={form.commonRoom}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="commonRoom" className="ml-2 text-sm text-gray-700">Common Room</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="kitchen"
+              name="kitchen"
+              checked={form.kitchen}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="kitchen" className="ml-2 text-sm text-gray-700">Kitchen</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="furnished"
+              name="furnished"
+              checked={form.furnished}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="furnished" className="ml-2 text-sm text-gray-700">Furnished</label>
+          </div>
+        </div>
+      </div>
 
-        <div className="col-span-2">
-          <label className="block mb-1 font-semibold">Amenities:</label>
+      {/* Amenities Section */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Amenities</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {[
             "Gas",
             "Electricity",
@@ -328,26 +303,50 @@ export default function MessForm({ onChange }) {
             "Security Guard",
             "Parking",
           ].map((item) => (
-            <label key={item} className="mr-4">
+            <div key={item} className="flex items-center">
               <input
                 type="checkbox"
+                id={`amenity-${item}`}
                 value={item}
                 checked={form.amenities.includes(item)}
                 onChange={handleAmenities}
-              />{" "}
-              {item}
-            </label>
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor={`amenity-${item}`} className="ml-2 text-sm text-gray-700">{item}</label>
+            </div>
           ))}
         </div>
+      </div>
 
-        <input
-          type="file"
-          multiple
-          onChange={(e) =>
-            setForm((prev) => ({ ...prev, images: Array.from(e.target.files) }))
-          }
-          className="col-span-2"
-        />
+      {/* Images Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Property Images</h3>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <label className="block cursor-pointer">
+            <span className="text-gray-700">Upload images (multiple allowed)</span>
+            <input
+              type="file"
+              multiple
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, images: Array.from(e.target.files) }))
+              }
+              className="mt-2 block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+            />
+          </label>
+          <p className="mt-1 text-xs text-gray-500">
+            Upload clear, high-quality images of your property
+          </p>
+        </div>
+        {form.images.length > 0 && (
+          <p className="mt-2 text-sm text-green-600">
+            {form.images.length} {form.images.length === 1 ? 'image' : 'images'} selected
+          </p>
+        )}
       </div>
     </div>
   );

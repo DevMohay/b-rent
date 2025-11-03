@@ -10,7 +10,7 @@ export default withAuth(
     const roleAccess = {
       admin: ["/admin", "/dashboard"],
       seller: ["/seller", "/dashboard"],
-      user: ["/dashboard"],
+      user: ["/seller", "/dashboard"],
     };
 
     // Check if the user has access to the requested path based on their role

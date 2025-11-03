@@ -9,14 +9,15 @@ import BathtubOutlinedIcon from "@mui/icons-material/BathtubOutlined";
 import CountertopsOutlinedIcon from "@mui/icons-material/CountertopsOutlined";
 import BalconyOutlinedIcon from "@mui/icons-material/BalconyOutlined";
 import CollectionsOutlinedIcon from "@mui/icons-material/CollectionsOutlined";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FiHeart, FiMessageCircle } from "react-icons/fi";
 
 import moment from "moment";
-import Navbar from "../../../components/Navbar";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import axios from "../../../utils/axiosInstance";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { BedOutlined, KitchenOutlined } from "@mui/icons-material";
 import SellerInfo from "../../dashboard/sellerInfo";
 import HouseDetails from "../../../components/details/house";
 import LandDetails from "../../../components/details/land";
@@ -25,6 +26,9 @@ import ShopDetails from "../../../components/details/shop";
 import RestaurantDetails from "../../../components/details/resturant";
 import Share from "../../../components/share";
 import OfficeDetails from "../../../components/details/office";
+import Loading from "../../loading";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const MediaGallery = ({ images }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
@@ -60,104 +64,142 @@ const MediaGallery = ({ images }) => {
   const displayedImages = showMore ? images.slice(1) : images.slice(1, 5);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 shadow-md mb-4 relative">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 relative rounded-3xl overflow-hidden">
       {/* Main Image */}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-[400px] md:h-[500px] group">
         {images?.[0] && (
           <motion.img
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.02 }}
             src={images[0]}
             alt="Main"
             onClick={() => openModal(0)}
-            className="w-full h-full object-cover rounded-md cursor-pointer shadow"
+            className="w-full h-full object-cover cursor-pointer transition-all duration-500"
           />
         )}
+        
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
         {/* Mobile Show More Button */}
-        {images.length > 5 && (
-          <div className="absolute right-4 bottom-4 text-center block md:hidden">
+        {images.length > 1 && (
+          <div className="absolute right-4 bottom-4 block md:hidden">
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => openModal(0)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-5 py-3 bg-white/95 backdrop-blur-md text-gray-800 rounded-xl hover:bg-white shadow-2xl font-semibold flex items-center gap-2 border border-gray-200"
             >
-              <CollectionsOutlinedIcon className="inline mr-2" />
-              {showMore ? "Show Less" : `Show All ${images.length} Photos`}
+              <CollectionsOutlinedIcon />
+              <span>View All {images.length}</span>
             </motion.button>
           </div>
         )}
       </div>
 
       {/* Right-side 4 Images Grid (hidden on small devices) */}
-      <div className="hidden md:grid grid-cols-2 gap-2 relative">
+      <div className="hidden md:grid grid-cols-2 gap-3 relative">
         {displayedImages.map((image, index) => (
-          <motion.img
-            whileHover={{ scale: 1.05 }}
+          <motion.div
             key={index}
-            src={image}
-            alt={`Image ${index + 2}`}
-            onClick={() => openModal(index + 1)}
-            className="w-full h-full object-cover rounded-md cursor-pointer"
-          />
+            whileHover={{ scale: 1.03 }}
+            className="relative h-[245px] group overflow-hidden rounded-2xl"
+          >
+            <img
+              src={image}
+              alt={`Image ${index + 2}`}
+              onClick={() => openModal(index + 1)}
+              className="w-full h-full object-cover cursor-pointer transition-all duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </motion.div>
         ))}
 
         {/* Desktop See More Button */}
         {images.length > 5 && (
-          <div className="absolute right-4 bottom-4">
+          <div className="absolute right-4 bottom-4 z-10">
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => openModal(0)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-6 py-3 bg-white/95 backdrop-blur-md text-gray-800 rounded-xl hover:bg-white shadow-2xl font-semibold flex items-center gap-2 border border-gray-200"
             >
-              <CollectionsOutlinedIcon className="inline mr-2" />
-              {showMore ? "Show Less" : `See All ${images.length} Photos`}
+              <CollectionsOutlinedIcon />
+              <span>View All {images.length}</span>
             </motion.button>
           </div>
         )}
       </div>
 
+      {/* Modal */}
       <AnimatePresence>
         {selectedImageIndex !== null && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center "
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={handleBackdropClick}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            <div className="z-50">
-              <button
-                className="top-10 right-20 w-10 h-10 absolute text-2xl bg-gray-700 rounded-full text-white z-10"
-                onClick={closeModal}
-              >
-                {" "}
-                <CloseIcon />
-              </button>
-            </div>
-            <div
-              ref={modalRef}
-              className="relative max-w-4xl w-full p-4 bg-red-400 z-[-10]"
+            {/* Close Button */}
+            <button
+              className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white z-50 flex items-center justify-center transition-all duration-300 hover:scale-110"
+              onClick={closeModal}
             >
+              <CloseIcon />
+            </button>
+
+            {/* Navigation Buttons */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                prevImage();
+              }}
+              className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white z-50 flex items-center justify-center transition-all duration-300 hover:scale-110"
+            >
+              <FaChevronLeft />
+            </button>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                nextImage();
+              }}
+              className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white z-50 flex items-center justify-center transition-all duration-300 hover:scale-110"
+            >
+              <FaChevronRight />
+            </button>
+
+            {/* Image Counter */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-full z-50">
+              {selectedImageIndex + 1} / {images.length}
+            </div>
+
+            <div ref={modalRef} className="relative max-w-6xl w-full">
               <motion.img
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
                 src={images[selectedImageIndex]}
                 alt="Preview"
-                className="w-full h-auto max-h-[80vh] mx-auto rounded z"
+                className="w-full h-auto max-h-[85vh] mx-auto rounded-2xl shadow-2xl"
               />
 
-              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+              {/* Thumbnails */}
+              <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-4xl mx-auto">
                 {images.map((img, idx) => (
-                  <img
+                  <motion.img
                     key={idx}
+                    whileHover={{ scale: 1.1 }}
                     src={img}
                     alt={`thumb-${idx}`}
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className={`w-16 h-16 object-cover rounded border cursor-pointer ${
-                      idx === selectedImageIndex ? "border-white border-2" : ""
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex(idx);
+                    }}
+                    className={`w-20 h-20 object-cover rounded-lg cursor-pointer transition-all duration-300 ${
+                      idx === selectedImageIndex
+                        ? "border-4 border-white shadow-xl scale-110"
+                        : "border-2 border-white/30 opacity-70 hover:opacity-100"
                     }`}
                   />
                 ))}
@@ -171,16 +213,25 @@ const MediaGallery = ({ images }) => {
 };
 
 function AdDetailsPage({ params }) {
-  const { id } = params;
+  const resolvedParams = use(params);
+  const { id } = resolvedParams;
   const [ad, setAd] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [adUrl, setAdUrl] = useState("");
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchAdDetails = async () => {
       try {
         const response = await axios.get(`/ads/${id}`);
         setAd(response.data);
+        if (typeof window !== "undefined") {
+          setAdUrl(window.location.href);
+        }
       } catch (err) {
         setError("Failed to fetch ad details.");
       } finally {
@@ -190,92 +241,271 @@ function AdDetailsPage({ params }) {
     if (id) fetchAdDetails();
   }, [id]);
 
+  useEffect(() => {
+    const checkWishlist = async () => {
+      if (status === "authenticated" && id) {
+        try {
+          const res = await axios.get(`/wishlist?adId=${id}`);
+          setWishlisted(!!res.data?.wishlisted);
+        } catch (e) {
+          // ignore and keep false
+        }
+      } else {
+        setWishlisted(false);
+      }
+    };
+    checkWishlist();
+  }, [status, id]);
+
+  const handleWishlistClick = async () => {
+    if (status !== "authenticated") {
+      router.push("/auth/login");
+      return;
+    }
+    setWishlistLoading(true);
+    try {
+      if (wishlisted) {
+        await axios.delete(`/wishlist?adId=${id}`);
+        setWishlisted(false);
+      } else {
+        await axios.post(`/wishlist`, { adId: id });
+        setWishlisted(true);
+      }
+    } catch (e) {
+      // optional: show error toast
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
   if (loading)
-    return <div className="text-center p-4">Loading ad details...</div>;
-  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
+    return (
+      <div className="text-center p-4">
+        <Loading />
+      </div>
+    );
+  if (error)
+    return <div className="text-center p-4 text-red-500">{error}</div>;
   if (!ad) return <div className="text-center p-4">Ad not found.</div>;
 
   const getPropertyHighlights = (icon) => {
     switch (icon) {
       case "size":
-        return <CropIcon />;
+        return <CropIcon className="text-purple-600" />;
       case "bedrooms":
-        return <HotelOutlinedIcon />;
+        return <HotelOutlinedIcon className="text-blue-600" />;
       case "bathrooms":
-        return <BathtubOutlinedIcon />;
+        return <BathtubOutlinedIcon className="text-teal-600" />;
       case "kitchen":
-        return <CountertopsOutlinedIcon />;
+        return <CountertopsOutlinedIcon className="text-orange-600" />;
       case "balcony":
-        return <BalconyOutlinedIcon />;
+        return <BalconyOutlinedIcon className="text-green-600" />;
     }
   };
 
   return (
-    <div className="bg-white min-h-screen ">
-      <div className="container md:max-w-6xl lg:max-w-5xl mx-auto p-4">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+      <div className="container max-w-7xl mx-auto px-4 py-6">
         <MediaGallery images={ad.images} />
 
-        <div className="details-container flex flex-col  md:flex-row justify-center  lg:flex-row rounded-lg shadow-md gap-4">
-          <div className="left w-full">
-            <div className="price text-black  p-2 md:p-4 lg:p-6 rounded-lg shadow-md">
-              <span className=" capitalize font-bold ">
-                {ad.category} for {ad.rentOrSale} , Posted{" "}
-              </span>
-              <span className="">
-                {moment(ad.createdAt || ad.updatedAt).fromNow()}
-              </span>
-              <br />
-
-              <span className="flex gap-2">
-                <h1 className="font-bold">{ad.price}TK</h1>
-                <p>{ad.rentOrSale === "rent" ? <p>Per Month</p> : ""}</p>
-              </span>
-              <span>
-                Address: {ad.union || ad.location.union},{" "}
-                {ad.area || ad.location.area},{" "}
-                {ad.roadNumber || ad.location.roadNumber} Road
-              </span>
-              <div className="gap-6 font-bold flex flex-wrap p-2 insight-shadow">
-                {ad.size ? (
-                  <span className="items-center p-2 md:p-4 lg:p-4 ">{getPropertyHighlights("size")} {ad.size} sq. ft.</span>
-                ) : ''}
-                {ad.bedrooms ? (
-                  <span className="items-center p-2 md:p-4 lg:p-4 ">{getPropertyHighlights("bedrooms")} {ad.bedrooms} Bed</span>
-                ) : ''}
-                {ad.bathrooms ? (
-                  <span className="items-center p-2 md:p-4 lg:p-4 ">{getPropertyHighlights("bathrooms")} {ad.bathrooms} Bath</span>
-                ) : ''}
-                {ad.kitchen ? (
-                  <span className="items-center p-2 md:p-4 lg:p-4 ">{getPropertyHighlights("kitchen")} {ad.kitchen} Kitchen</span>
-                ) : ''}
-                {ad.balcony ? (
-                  <span className="items-center p-2 md:p-4 lg:p-4 ">{getPropertyHighlights("balcony")} {ad.balcony} Balcony</span>
-                ) : ''}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Section - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Price & Info Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border border-gray-200"
+            >
+              {/* Category Badge */}
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold capitalize shadow-lg">
+                  {ad.category}
+                </span>
+                <span
+                  className={`inline-block ${
+                    ad.rentOrSale === "rent"
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                      : "bg-gradient-to-r from-purple-500 to-pink-600"
+                  } text-white px-4 py-2 rounded-full text-sm font-bold capitalize shadow-lg`}
+                >
+                  For {ad.rentOrSale}
+                </span>
               </div>
-            </div>
 
-            <div className="detail text-black  gap-4">
+              {/* Price */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-baseline gap-3 mb-2">
+                  <h1 className="text-5xl md:text-6xl font-black text-gray-900">
+                    ৳{ad.price?.toLocaleString() || ad.price}
+                  </h1>
+                  {ad.rentOrSale === "rent" && (
+                    <span className="text-xl text-gray-500 font-medium">
+                      /month
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3">
+                  {/* Message Button */}
+                  {session?.user?.id !== ad.user?._id && (
+                    <button
+                      onClick={() => {
+                        if (!session) {
+                          router.push('/auth/login');
+                          return;
+                        }
+                        router.push(`/messages/${ad._id}`);
+                      }}
+                      className="flex items-center gap-2 px-5 py-3 rounded-xl font-semibold shadow-md transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                    >
+                      <FiMessageCircle className="text-xl" />
+                      Message
+                    </button>
+                  )}
+
+                  {/* Add to Wishlist Button */}
+                  <button
+                    onClick={handleWishlistClick}
+                    disabled={wishlistLoading}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold shadow-md transition-all duration-300 ${
+                      wishlisted
+                        ? "bg-red-500 hover:bg-red-600 text-white"
+                        : "bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white"
+                    }`}
+                  >
+                    <FiHeart className={`text-xl ${wishlisted ? "fill-white" : ""}`} />
+                    {wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Location & Time */}
+              <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-start gap-3 text-gray-700">
+                  <LocationOnIcon className="text-red-500 mt-1" />
+                  <p className="text-lg">
+                    <span className="font-semibold">
+                      {ad.union || ad.location?.union}
+                    </span>
+                    , {ad.area || ad.location?.area}
+                    {ad.roadNumber || ad.location?.roadNumber
+                      ? `, Road ${ad.roadNumber || ad.location.roadNumber}`
+                      : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 text-gray-600">
+                  <AccessTimeIcon className="text-blue-500" />
+                  <p>
+                    Posted{" "}
+                    <span className="font-semibold">
+                      {moment(ad.createdAt || ad.updatedAt).fromNow()}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Property Highlights */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                {ad.size && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    {getPropertyHighlights("size")}
+                    <span className="text-sm font-bold text-gray-800">
+                      {ad.size} sq ft
+                    </span>
+                  </motion.div>
+                )}
+                {ad.bedrooms && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    {getPropertyHighlights("bedrooms")}
+                    <span className="text-sm font-bold text-gray-800">
+                      {ad.bedrooms} Bed
+                    </span>
+                  </motion.div>
+                )}
+                {ad.bathrooms && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl border border-teal-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    {getPropertyHighlights("bathrooms")}
+                    <span className="text-sm font-bold text-gray-800">
+                      {ad.bathrooms} Bath
+                    </span>
+                  </motion.div>
+                )}
+                {ad.kitchen && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border border-orange-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    {getPropertyHighlights("kitchen")}
+                    <span className="text-sm font-bold text-gray-800">
+                      {ad.kitchen} Kitchen
+                    </span>
+                  </motion.div>
+                )}
+                {ad.balcony && (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200 hover:shadow-lg transition-all duration-300"
+                  >
+                    {getPropertyHighlights("balcony")}
+                    <span className="text-sm font-bold text-gray-800">
+                      {ad.balcony} Balcony
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Details Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               {ad.category === "house" && <HouseDetails ad={ad} />}
               {ad.category === "land" && <LandDetails ad={ad} />}
               {ad.category === "mess" && <MessDetails ad={ad} />}
               {ad.category === "shop" && <ShopDetails ad={ad} />}
               {ad.category === "resturant" && <RestaurantDetails ad={ad} />}
               {ad.category === "office" && <OfficeDetails ad={ad} />}
-            </div>
+            </motion.div>
           </div>
 
-          <div className="right w-full lg:w-[60%]">
-            <div className="seller-info bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-2xl font-bold mb-4 border-b pb-2 text-gray-800">
-                Seller Information
+          {/* Right Section - Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Seller Info Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-3xl shadow-xl p-6 border border-gray-200 sticky top-6"
+            >
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-3">
+                <span className="w-2 h-8 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></span>
+                Seller Info
               </h2>
-              <div className="flex items-center gap-4 mb-4">
-                <SellerInfo user={ad.user} />
-              </div>
-            </div>
-            <Share ad={ad} />
-            <div className="eim"></div>
-            <div className="share"></div>
+              <SellerInfo user={ad.user} adUrl={adUrl} />
+            </motion.div>
+
+            {/* Share Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-3xl shadow-xl p-6 border border-gray-200"
+            >
+              <Share ad={ad} />
+            </motion.div>
           </div>
         </div>
       </div>

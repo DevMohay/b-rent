@@ -5,6 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
+import MapPicker from "../ui/MapPicker";
 
 const LandForm = forwardRef(({ onChange }, ref) => {
   const [form, setForm] = useState({
@@ -24,10 +25,6 @@ const LandForm = forwardRef(({ onChange }, ref) => {
     images: [],
   });
 
-  const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [tempCoords, setTempCoords] = useState({ lat: 25.0083, lng: 89.2839 });
-
   // Notify parent on form change
   useEffect(() => {
     if (onChange) onChange(form);
@@ -36,76 +33,6 @@ const LandForm = forwardRef(({ onChange }, ref) => {
   useImperativeHandle(ref, () => ({
     getFormData: () => form,
   }));
-
-  // Load Google Maps
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement("script");
-      script.src =
-        "https://maps.gomaps.pro/maps/api/js?key=AlzaSys0FA2WgwgdDOs1X-i8Eq3FpcsMfSdla_I";
-      script.async = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setMapLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (showMap && mapLoaded) {
-      const map = new window.google.maps.Map(
-        document.getElementById("google-map"),
-        {
-          center: tempCoords,
-          zoom: 15,
-        }
-      );
-
-      const marker = new window.google.maps.Marker({
-        position: tempCoords,
-        map,
-        draggable: true,
-      });
-
-      marker.addListener("dragend", (e) => {
-        setTempCoords({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-      });
-
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText =
-        "background:#fff;padding:12px;margin:10px;border-radius:5px;border:2px solid #ccc;display:flex;align-items:center;gap:6px;cursor:pointer";
-
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = "locationOption";
-      radio.id = "use-my-location";
-
-      const label = document.createElement("label");
-      label.htmlFor = "use-my-location";
-      label.textContent = "My Location";
-
-      wrapper.appendChild(radio);
-      wrapper.appendChild(label);
-
-      wrapper.onclick = () => {
-        navigator.geolocation?.getCurrentPosition(
-          (pos) => {
-            const position = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-            map.setCenter(position);
-            marker.setPosition(position);
-            setTempCoords(position);
-            radio.checked = true;
-          },
-          () => alert("Location access denied.")
-        );
-      };
-
-      map.controls[window.google.maps.ControlPosition.TOP_LEFT].push(wrapper);
-    }
-  }, [showMap, mapLoaded]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -122,157 +49,215 @@ const LandForm = forwardRef(({ onChange }, ref) => {
     }));
   };
 
-  const confirmLocation = () => {
-    setForm((prev) => ({
-      ...prev,
-      coordinates: { ...tempCoords },
-    }));
-    setShowMap(false);
-  };
-
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <h2 className="col-span-2 text-lg font-semibold">🌍 Land Listing Form</h2>
-
-      <input
-        className="input"
-        name="union"
-        value={form.union}
-        onChange={handleChange}
-        placeholder="Union"
-      />
-      <input
-        className="input"
-        name="area"
-        value={form.area}
-        onChange={handleChange}
-        placeholder="Area"
-      />
-      <input
-        className="input"
-        name="roadNumber"
-        value={form.roadNumber}
-        onChange={handleChange}
-        placeholder="Road Number"
-      />
-
-      <div className="col-span-2">
-        <button
-          type="button"
-          onClick={() => setShowMap(true)}
-          className="bg-gray-200 px-4 py-2 rounded border"
-        >
-          📍 Pick Location on Map
-        </button>
-        {form.coordinates.lat && (
-          <p className="text-sm text-gray-700 mt-1">
-            ✅ Selected: <b>{form.coordinates.lat}</b>, <b>{form.coordinates.lng}</b>
-          </p>
-        )}
-      </div>
-
-      {showMap && (
-        <div className="col-span-2 mt-4 border rounded overflow-hidden">
-          <div id="google-map" className="w-full h-[400px]" />
-          <div className="flex justify-between p-2 bg-gray-100">
-            <button
-              type="button"
-              onClick={() => setShowMap(false)}
-              className="bg-red-600 text-white px-3 py-1 rounded"
+    <div className="space-y-6">
+      {/* Basic Information Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Basic Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ad Title</label>
+            <input 
+              name="title" 
+              placeholder="Enter a descriptive title" 
+              value={form.title} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+            <select 
+              name="listingType" 
+              value={form.listingType} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+              required
             >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmLocation}
-              className="bg-green-600 text-white px-3 py-1 rounded"
-            >
-              Confirm Location
-            </button>
+              <option value="sale">For Sale</option>
+              <option value="rent">For Rent</option>
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price (BDT)</label>
+            <input 
+              name="price" 
+              type="number" 
+              placeholder="Enter price" 
+              value={form.price} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Size (sq ft)</label>
+            <input 
+              name="size" 
+              type="number" 
+              placeholder="Enter size in square feet" 
+              value={form.size} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+              required
+            />
           </div>
         </div>
-      )}
-
-      <input
-        className="input col-span-2"
-        name="title"
-        value={form.title}
-        onChange={handleChange}
-        placeholder="Title"
-      />
-      <textarea
-        className="input col-span-2"
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        placeholder="Description"
-      />
-
-      <select
-        name="listingType"
-        value={form.listingType}
-        onChange={handleChange}
-        className="input col-span-2"
-      >
-        <option value="sale">Sale</option>
-        <option value="rent">Rent</option>
-      </select>
-
-      <input
-        type="number"
-        name="price"
-        value={form.price}
-        onChange={handleChange}
-        placeholder="Price"
-        className="input"
-      />
-      <input
-        type="number"
-        name="size"
-        value={form.size}
-        onChange={handleChange}
-        placeholder="Land Size (sq.ft)"
-        className="input"
-      />
-
-      <select
-        name="landType"
-        value={form.landType}
-        onChange={handleChange}
-        className="input col-span-2"
-      >
-        <option value="Residential">Residential</option>
-        <option value="Commercial">Commercial</option>
-        <option value="Agricultural">Agricultural</option>
-      </select>
-
-      <label className="col-span-2">
-        <input
-          type="checkbox"
-          name="facingRoad"
-          checked={form.facingRoad}
-          onChange={handleChange}
-        />{" "}
-        Facing Road
-      </label>
-
-      <label className="col-span-2">
-        <input
-          type="checkbox"
-          name="boundaryWall"
-          checked={form.boundaryWall}
-          onChange={handleChange}
-        />{" "}
-        Boundary Wall
-      </label>
-
-      <input
-        className="col-span-2"
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={handleFileChange}
-      />
+        
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea 
+            name="description" 
+            placeholder="Describe your property in detail" 
+            value={form.description} 
+            onChange={handleChange} 
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+            required
+          />
+        </div>
+      </div>
+      
+      {/* Location Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Location Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Union</label>
+            <input 
+              name="union" 
+              placeholder="Enter union" 
+              value={form.union} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+            <input 
+              name="area" 
+              placeholder="Enter area" 
+              value={form.area} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Road Number</label>
+            <input 
+              name="roadNumber" 
+              placeholder="Enter road number" 
+              value={form.roadNumber} 
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" 
+            />
+          </div>
+        </div>
+        
+        <MapPicker
+          value={form.coordinates}
+          onChange={(coords) =>
+            setForm((prev) => ({ ...prev, coordinates: coords }))
+          }
+          buttonLabel="Pick Location on Map"
+        />
+      </div>
+      
+      {/* Land Details Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Land Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="form-group">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Land Type</label>
+            <select
+              name="landType"
+              value={form.landType}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+            >
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Agricultural">Agricultural</option>
+              <option value="Industrial">Industrial</option>
+            </select>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="facingRoad"
+                name="facingRoad"
+                checked={form.facingRoad}
+                onChange={handleChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="facingRoad" className="ml-2 block text-sm text-gray-700">Facing Road</label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="boundaryWall"
+                name="boundaryWall"
+                checked={form.boundaryWall}
+                onChange={handleChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="boundaryWall" className="ml-2 block text-sm text-gray-700">Boundary Wall</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Images Section */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Property Images</h3>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+            id="image-upload"
+          />
+          <label htmlFor="image-upload" className="cursor-pointer">
+            <div className="flex flex-col items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="mt-2 text-sm text-gray-600">Click to upload images</p>
+              <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
+            </div>
+          </label>
+        </div>
+        
+        {form.images.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Uploaded Images ({form.images.length})</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {form.images.map((img, idx) => (
+                <div key={idx} className="relative group">
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt={`Preview ${idx}`}
+                    className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

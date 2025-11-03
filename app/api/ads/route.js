@@ -4,6 +4,8 @@ import Ad from "../../model/ad";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import cloudinary from "../../../utils/cloudinary";
+import User from "../../model/user";
+import { withCache, generateCacheKey, invalidateCache } from "../../../utils/cacheWrapper";
 
 export const config = {
   api: {
@@ -36,9 +38,13 @@ async function handler(req, res) {
       console.log("Parsed body in /api/ads:", body);
       const { role, id: userId } = session.user;
 
-      if (role !== "seller" && role !== "admin") {
+      // Allow user, seller, and admin to post ads
+      if (role !== "user" && role !== "seller" && role !== "admin") {
         return NextResponse.json({ message: "Forbidden" }, { status: 403 });
       }
+
+      // Fetch seller info snapshot
+      const seller = await User.findById(userId).select("name email phone whatsapp imo profilePicture");
 
       const imageUploadPromises = images.map(async (image) => {
         const imageBuffer = Buffer.from(await image.arrayBuffer());
@@ -78,11 +84,23 @@ async function handler(req, res) {
       const newAd = new Ad({
         ...body,
         user: userId,
+        sellerSnapshot: seller ? {
+          name: seller.name,
+          email: seller.email,
+          phone: seller.phone,
+          whatsapp: seller.whatsapp,
+          imo: seller.imo,
+          profilePicture: seller.profilePicture,
+        } : undefined,
         images: imageUploadResults.map((result) => result.secure_url),
         video: videoUploadResult ? videoUploadResult.secure_url : null,
       });
 
       await newAd.save();
+      
+      // Invalidate all ads cache keys when a new ad is created
+      await invalidateCache('ads');
+      
       return NextResponse.json(newAd, { status: 201 });
     } catch (error) {
       console.error("Error in POST /api/ads:", error);
@@ -95,18 +113,23 @@ async function handler(req, res) {
       const featured = searchParams.get("featured");
       const category = searchParams.get("category");
       const seller = searchParams.get("seller");
+      const limit = parseInt(searchParams.get("limit") || "10");
+      const page = parseInt(searchParams.get("page") || "1");
+      const skip = (page - 1) * limit;
 
       let query = {};
 
-      if (seller === "me" && session && session.user.role === "seller") {
+      if (seller === "me" && session && session.user?.id) {
+        // Return only the current user's ads (works for user or seller)
         query.user = session.user.id;
       } else if (featured === "true") {
         query.featured = true;
         query.status = "approved";
       } else {
-        if (session && session.user.role === "admin") {
-          // No additional filters for admin
+        if (session && session.user?.role === "admin") {
+          // Admin sees all ads regardless of status
         } else {
+          // Public and non-admin users only see approved ads
           query.status = "approved";
         }
       }
@@ -115,8 +138,45 @@ async function handler(req, res) {
         query.category = category;
       }
 
-      const ads = await Ad.find(query).populate("user", "name email");
-      return NextResponse.json(ads, { status: 200 });
+      // Generate cache key based on query parameters
+      const cacheKey = generateCacheKey('ads', {
+        featured: featured || '',
+        category: category || '',
+        seller: seller || '',
+        userId: seller === "me" ? session?.user?.id : '',
+        role: session?.user?.role || 'public',
+        limit,
+        page
+      });
+
+      // Use Redis cache for GET requests with proper serialization
+      const result = await withCache(
+        async () => {
+          await dbConnect();
+          const totalAds = await Ad.countDocuments(query);
+          const ads = await Ad.find(query)
+            .populate("user", "name email")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(); // Convert Mongoose documents to plain JavaScript objects
+
+          // Convert to plain object to ensure proper serialization
+          const serializedData = {
+            ads: JSON.parse(JSON.stringify(ads)),
+            totalPages: Math.ceil(totalAds / limit),
+            currentPage: page
+          };
+          
+          console.log("✅ Redis caching working properly for: " + cacheKey);
+          return serializedData;
+        },
+        cacheKey,
+        // Cache for 5 minutes (300 seconds)
+        300
+      );
+      
+      return NextResponse.json(result, { status: 200 });
     } catch (error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
