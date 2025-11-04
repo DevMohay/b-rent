@@ -10,9 +10,7 @@ import Loading from '../../loading';
 import { io } from 'socket.io-client';
 
 // Resolve Socket.IO server URL from env for production deployments
-const SOCKET_URL =
-  process.env.NEXT_PUBLIC_SOCKET_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://b-rent-production.up.railway.app' : 'http://localhost:3000');
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
 
 export default function MessagesPage({ params }) {
   const { data: session, status } = useSession();
@@ -101,7 +99,9 @@ export default function MessagesPage({ params }) {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      withCredentials: true,
+      autoConnect: true
     });
 
     // Connection event handlers

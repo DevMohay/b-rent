@@ -24,12 +24,19 @@ app.prepare().then(() => {
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.NODE_ENV === 'production' 
-        ? 'https://b-rent-production.up.railway.app' 
+        ? [
+            'https://b-rent-production.up.railway.app',
+            'https://b-rent-b8diwfumz-mohayminul-islams-projects.vercel.app',
+            'https://b-rent-seven.vercel.app',
+            /https:\/\/.*\.vercel\.app$/ // All Vercel preview URLs
+          ]
         : 'http://localhost:3000',
       methods: ["GET", "POST"],
-      credentials: true
+      credentials: true,
+      allowedHeaders: ["*"]
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
   });
 
   // Socket.io connection handling
@@ -49,11 +56,11 @@ app.prepare().then(() => {
       
       const roomId = `ad-${messageData.adId}`;
       
-      // Broadcast to ALL users in the room (including sender)
+      // Broadcast to ALL users in the room
       io.to(roomId).emit('receive-message', messageData);
     });
 
-    // Handle typing indicator (optional)
+    // Handle typing indicator
     socket.on('typing', (data) => {
       const roomId = `ad-${data.adId}`;
       socket.to(roomId).emit('user-typing', {
